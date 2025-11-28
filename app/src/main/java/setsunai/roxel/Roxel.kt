@@ -17,6 +17,7 @@ import setsunai.roxel.network.model.EmptyObject
 import setsunai.roxel.network.model.incoming.EffectIncoming
 import setsunai.roxel.network.model.incoming.RequestIncoming
 import setsunai.roxel.network.model.payload.EffectPayload
+import setsunai.roxel.network.model.payload.FastRequestPayload
 import setsunai.roxel.network.model.payload.RequestPayload
 import setsunai.roxel.network.processor.DataProcessor
 import setsunai.roxel.utils.RoxelUtils.toCRC32
@@ -252,7 +253,7 @@ class Roxel {
             network.transmitFast(
                 hash,
                 gson.toJson(
-                    RequestPayload(
+                    FastRequestPayload(
                         name = requestImpl.id,
                         data = serializable ?: EmptyObject()
                     )
