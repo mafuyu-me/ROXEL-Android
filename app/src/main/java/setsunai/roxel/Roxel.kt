@@ -6,6 +6,7 @@ import androidx.lifecycle.Observer
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import setsunai.roxel.ext.hook.base.EffectImpl
+import setsunai.roxel.ext.request.FastRequest
 import setsunai.roxel.ext.request.base.RequestImpl
 import setsunai.roxel.network.client.data.ConnectionState
 import setsunai.roxel.network.controller.NetworkController
@@ -27,6 +28,7 @@ class Roxel {
         class Builder(private val sdk: Roxel, private val id: String) {
             private var ip: String = "0.0.0.0"
             private var token: String = ""
+            private var udpFastPort: Int = 5000
             private var udpPort: Int = 5001
             private var tcpPort: Int = 5002
 
@@ -40,6 +42,11 @@ class Roxel {
                 return this
             }
 
+            fun udpFast(port: Int): Builder {
+                udpFastPort = port
+                return this
+            }
+
             fun udp(port: Int): Builder {
                 udpPort = port
                 return this
@@ -50,15 +57,18 @@ class Roxel {
                 return this
             }
 
-            fun build(): Instance = Instance(sdk, id, ip, udpPort, tcpPort, token)
+            fun build(): Instance = Instance(sdk, id, ip, udpFastPort, udpPort, tcpPort, token)
         }
 
+        private val fastRequests: MutableList<FastRequest> =
+            Collections.synchronizedList(ArrayList())
         private val requests: MutableList<RequestImpl<out Serializable>> =
             Collections.synchronizedList(ArrayList())
         private val effects: MutableList<EffectImpl> = Collections.synchronizedList(ArrayList())
 
         private val token: String
         private val ip: String
+        private val udpFastPort: Int
         private val udpPort: Int
         private val tcpPort: Int
 
@@ -70,10 +80,12 @@ class Roxel {
             sdk: Roxel,
             id: String,
             ip: String,
+            udpFastPort: Int,
             udpPort: Int,
             tcpPort: Int,
             token: String
         ) {
+            this.udpFastPort = udpFastPort
             this.udpPort = udpPort
             this.tcpPort = tcpPort
             this.token = token
@@ -85,11 +97,15 @@ class Roxel {
         }
 
         fun credentials(): ServerCredentials {
-            return ServerCredentials(id.toCRC32(), ip, tcpPort, udpPort, token)
+            return ServerCredentials(id.toCRC32(), ip, udpFastPort, tcpPort, udpPort, token)
         }
 
         fun id(): String {
             return id
+        }
+
+        private fun onFastRequestTransmit(requestImpl: FastRequest, serializable: Serializable?) {
+            sdk.onFastRequestTransmit(hash, requestImpl, serializable)
         }
 
         private fun onRequestTransmit(
@@ -115,6 +131,15 @@ class Roxel {
                     val hash = key.toCRC32()
                     effects.find { it.hash == hash }?.onValueUpdate(k.asInt)
                 } catch (_: Exception) {
+                }
+            }
+        }
+
+        fun registerFastRequestImpl(requestImpl: FastRequest?) {
+            requestImpl?.apply {
+                if (requests.find { requestImpl.hash == it.hash } == null) {
+                    fastRequests += requestImpl
+                    requestImpl.registerUpdateTransmitter(::onFastRequestTransmit)
                 }
             }
         }
@@ -215,6 +240,25 @@ class Roxel {
                 else -> {}
             }
             processor.clear()
+        }
+    }
+
+    private fun onFastRequestTransmit(
+        hash: Long,
+        requestImpl: FastRequest,
+        serializable: Serializable?
+    ) {
+        try {
+            network.transmit(
+                hash,
+                gson.toJson(
+                    RequestPayload(
+                        name = requestImpl.id,
+                        data = serializable ?: EmptyObject()
+                    )
+                )
+            )
+        } catch (_: Throwable) {
         }
     }
 

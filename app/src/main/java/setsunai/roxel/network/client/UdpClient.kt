@@ -27,7 +27,7 @@ class UdpClient(
 
     private var failureCount: Int = 0
 
-    override suspend fun onLaunch(): Job? = withContext(Dispatchers.IO) {
+    override suspend fun onLaunch(): Job = withContext(Dispatchers.IO) {
         supervisorScope {
             launch(Dispatchers.IO) {
                 credentialsFlow.collectLatest { credentials ->
