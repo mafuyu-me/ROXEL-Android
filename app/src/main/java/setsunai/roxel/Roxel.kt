@@ -249,7 +249,7 @@ class Roxel {
         serializable: Serializable?
     ) {
         try {
-            network.transmit(
+            network.transmitFast(
                 hash,
                 gson.toJson(
                     RequestPayload(
