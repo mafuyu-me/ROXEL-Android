@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken
 import setsunai.roxel.Roxel
 import setsunai.roxel.ext.hook.Effect
 import setsunai.roxel.ext.hook.StateEffect
+import setsunai.roxel.ext.request.FastRequest
 import setsunai.roxel.ext.request.Request
 import java.io.Serializable
 import kotlin.reflect.KProperty
@@ -20,6 +21,10 @@ class RequestDelegate<T : Serializable>(private val request: Request<T>) {
     operator fun getValue(thisRef: Any?, property: KProperty<*>): Request<T> = request
 }
 
+class FastRequestDelegate(private val request: FastRequest) {
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): FastRequest = request
+}
+
 inline fun <reified T> ControllerScope.useStatesEffect(id: String, size: Int = 32): StatesEffectDelegate<T> {
     return StatesEffectDelegate(useStatesEffect(instance, id, size))
 }
@@ -30,6 +35,10 @@ inline fun <reified T> ControllerScope.useEffect(id: String): EffectDelegate<T> 
 
 inline fun <reified T : Serializable> ControllerScope.useRequest(id: String): RequestDelegate<T> {
     return RequestDelegate(useRequest<T>(instance, id))
+}
+
+fun ControllerScope.useFastRequest(id: String): FastRequestDelegate {
+    return FastRequestDelegate(useFastRequest(instance, id))
 }
 
 inline fun <reified T> useStatesEffect(controller: Roxel.Instance, id: String, size: Int = 32): StateEffect<T> {
@@ -48,4 +57,8 @@ inline fun <reified T : Serializable> useRequest(
 ): Request<T> {
     val type = object : TypeToken<T>() {}.type
     return Request(controller, id, type)
+}
+
+fun useFastRequest(controller: Roxel.Instance, id: String): FastRequest {
+    return FastRequest(controller, id)
 }

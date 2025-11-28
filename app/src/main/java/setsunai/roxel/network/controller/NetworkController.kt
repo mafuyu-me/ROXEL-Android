@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import setsunai.roxel.network.client.FastUdpClient
 import setsunai.roxel.network.client.TcpClient
 import setsunai.roxel.network.client.UdpClient
 import setsunai.roxel.network.client.data.ConnectionState
@@ -26,6 +27,7 @@ class NetworkController(
 
     private val incomingChannel = Channel<String>(Channel.BUFFERED)
     private val flow = MutableStateFlow(ConnectionState.UNAVAILABLE)
+    private val fastUdp: FastUdpClient = FastUdpClient(flow)
     private val udp = UdpClient(flow, wifiIsConnected)
     private val tcp = TcpClient(flow, incomingChannel)
 
@@ -51,14 +53,25 @@ class NetworkController(
     }
 
     private fun onLaunch() {
-        tcp.cancel()
+        fastUdp.cancel()
         udp.cancel()
+        tcp.cancel()
         serverCredentials?.apply {
+            fastUdp.updateCredentials(this)
             udp.updateCredentials(this)
             tcp.updateCredentials(this)
         }
-        tcp.launch()
+        fastUdp.launch()
         udp.launch()
+        tcp.launch()
+    }
+
+    fun transmitFast(hash: Long, message: String) {
+        if (selectedHash == hash) {
+            CoroutineScope(Dispatchers.IO).launch {
+                fastUdp.send(message)
+            }
+        }
     }
 
     fun transmit(hash: Long, message: String) {
@@ -81,6 +94,7 @@ class NetworkController(
     fun shutdown() {
         serverCredentials = null
         selectedHash = -1
+        fastUdp.cancel()
         tcp.cancel()
         udp.cancel()
     }

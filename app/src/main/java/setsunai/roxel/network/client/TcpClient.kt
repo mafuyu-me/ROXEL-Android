@@ -36,7 +36,7 @@ class TcpClient(
 
     private var credentialsHash: Long = -1
 
-    override suspend fun onLaunch(): Job? = withContext(Dispatchers.IO) {
+    override suspend fun onLaunch(): Job = withContext(Dispatchers.IO) {
         supervisorScope {
             launch(Dispatchers.IO) {
                 combine(
