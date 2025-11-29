@@ -124,7 +124,7 @@ class WiFiController(private val isRootedDevice: Boolean) :
         if (credentials?.ssid?.isEmpty() != false) {
             return
         }
-        if (isRootedDevice) {
+        if (!isRootedDevice) {
             onConnected()
             return
         }
