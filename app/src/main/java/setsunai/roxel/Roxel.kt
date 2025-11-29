@@ -168,6 +168,7 @@ class Roxel {
         private var passkey: String = ""
         private var ssid: String = ""
         private var hidden: Boolean = false
+        private var deviceRooted: Boolean = true
 
         fun passkey(passkey: String): Builder {
             this.passkey = passkey
@@ -179,19 +180,23 @@ class Roxel {
             return this
         }
 
+        fun deviceRooted(rooted: Boolean): Builder {
+            this.deviceRooted = rooted
+            return this
+        }
+
         fun hidden(hidden: Boolean): Builder {
             this.hidden = hidden
             return this
         }
 
-        fun build(): Roxel = Roxel(activity, ssid, passkey, hidden)
+        fun build(): Roxel = Roxel(activity, ssid, passkey, hidden, deviceRooted)
     }
 
     private val instances: MutableMap<String, Instance> = Collections.synchronizedMap(HashMap())
-    private val wifi: WiFiController = WiFiController()
-    private val network: NetworkController =
-        NetworkController(wifi.isConnected, ::onIncomingData, ::onConnectionState)
     private val processor: DataProcessor = DataProcessor()
+    private val network: NetworkController
+    private val wifi: WiFiController
 
     private val activity: FragmentActivity
 
@@ -206,8 +211,11 @@ class Roxel {
         activity: FragmentActivity,
         ssid: String,
         passkey: String,
-        hidden: Boolean
+        hidden: Boolean,
+        deviceRooted: Boolean
     ) {
+        wifi = WiFiController(deviceRooted)
+        network = NetworkController(wifi.isConnected, ::onIncomingData, ::onConnectionState)
         wifiCredentials = WifiCredentials(ssid, passkey, hidden)
         this.activity = activity
     }

@@ -14,7 +14,8 @@ import setsunai.roxel.network.controller.helper.SsidInvoke
 import setsunai.roxel.network.data.WifiCredentials
 import setsunai.roxel.runtime.Console
 
-class WiFiController : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
+class WiFiController(private val isRootedDevice: Boolean) :
+    ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
     private lateinit var connectivityManager: ConnectivityManager
     private lateinit var wifiManager: WifiManager
     private var credentials: WifiCredentials? = null
@@ -120,10 +121,16 @@ class WiFiController : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION
 
     override fun onAvailable(network: Network) {
         super.onAvailable(network)
-        if (SsidInvoke.get() == credentials?.ssid && credentials?.ssid?.isEmpty() == false) {
+        if (credentials?.ssid?.isEmpty() != false) {
+            return
+        }
+        if (isRootedDevice) {
             onConnected()
-        } else {
-            onDisconnect()
+            return
+        }
+        when(SsidInvoke.get() == credentials?.ssid) {
+            true -> onConnected()
+            else -> onDisconnect()
         }
     }
 
