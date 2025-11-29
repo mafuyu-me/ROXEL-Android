@@ -138,7 +138,7 @@ class Roxel {
 
         fun registerFastRequestImpl(requestImpl: FastRequest?) {
             requestImpl?.apply {
-                if (requests.find { requestImpl.hash == it.hash } == null) {
+                if (fastRequests.find { requestImpl.hash == it.hash } == null) {
                     fastRequests += requestImpl
                     requestImpl.registerUpdateTransmitter(::onFastRequestTransmit)
                 }

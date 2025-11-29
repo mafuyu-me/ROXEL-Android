@@ -38,15 +38,10 @@ class FastUdpClient(private val stateFlow: MutableStateFlow<ConnectionState>) : 
                             credentialsHash = credentials.id
                         }
                         when (state) {
-                            ConnectionState.CONNECT -> {
+                            ConnectionState.SUCCESS -> {
                                 connect(credentials.ip, credentials.fastUdpPort)
                             }
-
-                            ConnectionState.UNAVAILABLE -> {
-                                disconnect()
-                            }
-
-                            else -> {}
+                            else -> disconnect()
                         }
                     }
             }
@@ -59,10 +54,7 @@ class FastUdpClient(private val stateFlow: MutableStateFlow<ConnectionState>) : 
                 val data = "${message}\r\n\r\n".toByteArray()
                 val sendPacket =
                     DatagramPacket(data, data.size, address, port)
-                socket?.apply {
-                    send(sendPacket)
-                    soTimeout = 1000
-                }
+                socket?.send(sendPacket)
             } catch (_: Throwable) {
             }
         }
@@ -71,7 +63,7 @@ class FastUdpClient(private val stateFlow: MutableStateFlow<ConnectionState>) : 
     private fun connect(ip: String, port: Int) {
         disconnect()
         try {
-            socket = DatagramSocket(port)
+            socket = DatagramSocket()
             address = InetAddress.getByName(ip)
             this.port = port
         } catch (_: Throwable) {
@@ -87,6 +79,7 @@ class FastUdpClient(private val stateFlow: MutableStateFlow<ConnectionState>) : 
 
         address = null
         socket = null
+        port = -1
     }
 
     private fun closeClient() {
